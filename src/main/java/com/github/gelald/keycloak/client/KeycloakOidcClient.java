@@ -161,8 +161,9 @@ public class KeycloakOidcClient {
      * @return the full authorization URL
      */
     public String authorizationUrl(String redirectUri, String state, String codeChallenge) {
+        String authDomain = properties.getPublicDomain() != null ? properties.getPublicDomain() : properties.getDomain();
         return org.springframework.web.util.UriComponentsBuilder
-                .fromHttpUrl(properties.getDomain())
+                .fromHttpUrl(authDomain)
                 .path("/realms/{realm}/protocol/openid-connect/auth")
                 .queryParam("response_type", "code")
                 .queryParam("client_id", properties.getClientId())

@@ -11,9 +11,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "keycloak.oidc")
 public class KeycloakOidcProperties {
     /**
-     * Keycloak server domain URL (e.g. https://keycloak.example.com)
+     * Keycloak server internal domain URL.
+     * Used for all server-to-server API calls (token introspection, token exchange, certs, etc.).
+     * In container/K8s environments, this is typically the internal service address
+     * (e.g. http://keycloak-service:8080).
      */
     private String domain;
+    /**
+     * Keycloak server public domain URL.
+     * Used ONLY for constructing the browser redirect URL ({@code authorizationUrl}).
+     * This must be externally accessible by the end-user's browser
+     * (e.g. https://auth.example.com).
+     * <p>
+     * If not configured, falls back to {@link #domain}.
+     */
+    private String publicDomain;
     /**
      * Keycloak realm name
      */
