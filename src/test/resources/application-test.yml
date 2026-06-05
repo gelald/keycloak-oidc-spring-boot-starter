@@ -1,0 +1,6 @@
+keycloak:
+  oidc:
+    domain: http://localhost:8888
+    realm: test-realm
+    client-id: test-client
+    client-secret: test-secret
