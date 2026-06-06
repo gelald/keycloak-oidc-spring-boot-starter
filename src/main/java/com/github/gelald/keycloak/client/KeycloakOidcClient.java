@@ -3,220 +3,148 @@ package com.github.gelald.keycloak.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.gelald.keycloak.config.KeycloakOidcProperties;
 import com.github.gelald.keycloak.dto.*;
-import com.github.gelald.keycloak.exception.KeycloakErrorDecoder;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
-import java.net.http.HttpClient;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-
 /**
- * Keycloak OIDC client covering OpenID Connect / OAuth2 protocol endpoints.
- * Uses Spring's {@link RestClient} internally — no Feign / Spring Cloud dependency.
+ * Keycloak OIDC 客户端，覆盖 OpenID Connect / OAuth2 协议端点。
+ * 使用 Spring 的 {@link RestClient} 内部实现——无 Feign / Spring Cloud 依赖。
+ * <p>
+ * 此类为门面模式，内部委托给：
+ * <ul>
+ *   <li>{@link KeycloakHttp} - HTTP 层封装，处理 RestClient 配置、错误处理和认证作用域</li>
+ *   <li>{@link TokenOperations} - Token 相关操作（获取、内省、授权 URL）</li>
+ *   <li>{@link SessionOperations} - 会话相关操作（登出、撤销）</li>
+ *   <li>{@link ProviderOperations} - Provider 信息操作（证书、健康检查）</li>
+ * </ul>
  *
-* @see <a href="https://www.keycloak.org/docs/latest/securing_apps/">Keycloak Securing Applications</a>
+ * @see <a href="https://www.keycloak.org/docs/latest/securing_apps/">Keycloak Securing Applications</a>
+ * @since 1.0
  */
 public class KeycloakOidcClient {
 
-    private final RestClient restClient;
-    private final KeycloakOidcProperties properties;
-    private final KeycloakErrorDecoder errorDecoder;
+    private final TokenOperations tokenOperations;
+    private final SessionOperations sessionOperations;
+    private final ProviderOperations providerOperations;
 
+    /**
+     * 使用自定义 RestClient.Builder 创建客户端。
+     * <p>
+     * 用户可以通过提供自定义的 RestClient.Builder 来配置 SSL、代理、拦截器等。
+     *
+     * @param properties        Keycloak OIDC 配置属性
+     * @param objectMapper      JSON 序列化/反序列化器
+     * @param restClientBuilder 自定义 RestClient.Builder，如果为 null 则使用默认构建器
+     */
     public KeycloakOidcClient(KeycloakOidcProperties properties, ObjectMapper objectMapper,
-                               Duration connectTimeout, Duration readTimeout) {
-        this.properties = properties;
-        this.errorDecoder = new KeycloakErrorDecoder(objectMapper);
-
-        String basicAuth = "Basic " + java.util.Base64.getEncoder()
-                .encodeToString((properties.getClientId() + ":" + properties.getClientSecret())
-                        .getBytes(StandardCharsets.UTF_8));
-
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(connectTimeout)
-                .build();
-
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(readTimeout);
-
-        this.restClient = RestClient.builder()
-                .baseUrl(properties.getDomain())
-                .defaultHeader(org.springframework.http.HttpHeaders.AUTHORIZATION, basicAuth)
-                .requestFactory(requestFactory)
-                .build();
+                               RestClient.Builder restClientBuilder) {
+        if (restClientBuilder == null) {
+            restClientBuilder = RestClient.builder();
+        }
+        KeycloakHttp http = new KeycloakHttp(properties, objectMapper, restClientBuilder);
+        this.tokenOperations = new TokenOperations(http, properties);
+        this.sessionOperations = new SessionOperations(http);
+        this.providerOperations = new ProviderOperations(http);
     }
 
     /**
-     * Introspect a token to check if it is active.
+     * 内省 token 以检查其是否有效。
      *
      * @see <a href="https://tools.ietf.org/html/rfc7662">RFC 7662 - OAuth 2.0 Token Introspection</a>
      */
     public IntrospectResponse introspect(IntrospectRequest introspectRequest) {
-        return postForm(
-                "/realms/{realm}/protocol/openid-connect/token/introspect",
-                introspectRequest.toMultiValueMap(),
-                IntrospectResponse.class);
+        return tokenOperations.introspect(introspectRequest);
     }
 
     /**
-     * Exchange an authorization code for tokens (Authorization Code Flow with PKCE).
+     * 使用授权码换取 token（授权码 + PKCE 流程）。
      *
      * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.1">RFC 6749 - Authorization Code Grant</a>
      */
     public TokenResponse getTokenByAuthCode(AuthCodeTokenRequest authCodeTokenRequest) {
-        return postForm(
-                "/realms/{realm}/protocol/openid-connect/token",
-                authCodeTokenRequest.toMultiValueMap(),
-                TokenResponse.class);
+        return tokenOperations.getTokenByAuthCode(authCodeTokenRequest);
     }
 
     /**
-     * Refresh an expired access token using a refresh token.
+     * 使用 refresh token 刷新过期的 access token。
      *
      * @see <a href="https://tools.ietf.org/html/rfc6749#section-6">RFC 6749 - Refreshing an Access Token</a>
      */
     public TokenResponse getTokenByRefresh(RefreshTokenRequest refreshTokenRequest) {
-        return postForm(
-                "/realms/{realm}/protocol/openid-connect/token",
-                refreshTokenRequest.toMultiValueMap(),
-                TokenResponse.class);
+        return tokenOperations.getTokenByRefresh(refreshTokenRequest);
     }
 
     /**
-     * Obtain a token using client credentials (machine-to-machine).
+     * 使用客户端凭据获取 token（机器对机器）。
      *
      * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.4">RFC 6749 - Client Credentials Grant</a>
      */
     public TokenResponse getTokenByClientCredentials(ClientCredentialsTokenRequest clientCredentialsTokenRequest) {
-        return postForm(
-                "/realms/{realm}/protocol/openid-connect/token",
-                clientCredentialsTokenRequest.toMultiValueMap(),
-                TokenResponse.class);
+        return tokenOperations.getTokenByClientCredentials(clientCredentialsTokenRequest);
     }
 
     /**
-     * Obtain a token using username and password (Resource Owner Password Credentials).
+     * 使用用户名密码获取 token（资源所有者密码凭据）。
      *
      * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.3">RFC 6749 - Resource Owner Password Credentials Grant</a>
      */
     public TokenResponse getTokenByDirectFlow(DirectTokenRequest directTokenRequest) {
-        return postForm(
-                "/realms/{realm}/protocol/openid-connect/token",
-                directTokenRequest.toMultiValueMap(),
-                TokenResponse.class);
+        return tokenOperations.getTokenByDirectFlow(directTokenRequest);
     }
 
     /**
-     * End a session using the id_token_hint.
+     * 使用 id_token_hint 结束会话。
      *
      * @see <a href="https://openid.net/specs/openid-connect-session-1_0.html">OpenID Connect Session Management</a>
      */
     public void logout(LogoutRequest logoutRequest) {
-        postFormVoid(
-                "/realms/{realm}/protocol/openid-connect/logout",
-                logoutRequest.toMultiValueMap());
+        sessionOperations.logout(logoutRequest);
     }
 
     /**
-     * Revoke an access token.
+     * 撤销 access token。
      *
      * @see <a href="https://tools.ietf.org/html/rfc7009">RFC 7009 - OAuth 2.0 Token Revocation</a>
      */
     public void revoke(RevokeRequest revokeRequest) {
-        postFormVoid(
-                "/realms/{realm}/protocol/openid-connect/revoke",
-                revokeRequest.toMultiValueMap());
+        sessionOperations.revoke(revokeRequest);
     }
 
     /**
-     * Retrieve JWKS public keys for JWT signature verification.
+     * 获取 JWKS 公钥，用于 JWT 签名验证。
      *
      * @see <a href="https://tools.ietf.org/html/rfc7517">RFC 7517 - JSON Web Key (JWK)</a>
      */
     public CertificateResponse certs() {
-        return getJson(
-                "/realms/{realm}/protocol/openid-connect/certs",
-                CertificateResponse.class);
+        return providerOperations.certs();
     }
 
     /**
-     * Check Keycloak readiness (database and other dependencies).
+     * 检查 Keycloak 就绪状态（数据库等依赖项）。
      */
     public HealthResponse ready() {
-        return getJson("/health/ready", HealthResponse.class);
+        return providerOperations.ready();
     }
 
     /**
-     * Check Keycloak liveness.
+     * 检查 Keycloak 存活状态。
      */
     public HealthResponse live() {
-        return getJson("/health/live", HealthResponse.class);
+        return providerOperations.live();
     }
 
     /**
-     * Build the Keycloak authorization URL for Browser Flow (Authorization Code + PKCE).
+     * 构建 Keycloak 授权 URL（浏览器流程：授权码 + PKCE）。
      * <p>
-     * The caller should redirect the end-user's browser to this URL.
-     * After authentication, Keycloak redirects back with an authorization code,
-     * which can be exchanged via {@link #getTokenByAuthCode(AuthCodeTokenRequest)}.
+     * 调用方应将最终用户浏览器重定向到此 URL。
+     * 认证完成后，Keycloak 将重定向回来并带有授权码，
+     * 可通过 {@link #getTokenByAuthCode(AuthCodeTokenRequest)} 换取。
      *
-     * @param redirectUri   the redirect URI registered in Keycloak
-     * @param state         CSRF / session state value
-     * @param codeChallenge PKCE code challenge (generated via {@link com.github.gelald.keycloak.util.PkceUtils#generateCodeChallengeS256(String)})
-     * @return the full authorization URL
+     * @param redirectUri   在 Keycloak 中注册的重定向 URI
+     * @param state         CSRF / 会话状态值
+     * @param codeChallenge PKCE code challenge（通过 {@link com.github.gelald.keycloak.util.PkceUtils#generateCodeChallengeS256(String)} 生成）
+     * @return 完整的授权 URL
      */
     public String authorizationUrl(String redirectUri, String state, String codeChallenge) {
-        String authDomain = properties.getPublicDomain() != null ? properties.getPublicDomain() : properties.getDomain();
-        return org.springframework.web.util.UriComponentsBuilder
-                .fromHttpUrl(authDomain)
-                .path("/realms/{realm}/protocol/openid-connect/auth")
-                .queryParam("response_type", "code")
-                .queryParam("client_id", properties.getClientId())
-                .queryParam("redirect_uri", redirectUri)
-                .queryParam("state", state)
-                .queryParam("code_challenge", codeChallenge)
-                .queryParam("code_challenge_method", "S256")
-                .queryParam("scope", "openid")
-                .build(properties.getRealm())
-                .toString();
-    }
-
-    private <T> T postForm(String uri, org.springframework.util.MultiValueMap<String, String> formBody, Class<T> responseType) {
-        return restClient.post()
-                .uri(uri, properties.getRealm())
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(formBody)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                    String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    throw errorDecoder.decode(resp.getStatusCode().value(), body);
-                })
-                .body(responseType);
-    }
-
-    private void postFormVoid(String uri, org.springframework.util.MultiValueMap<String, String> formBody) {
-        restClient.post()
-                .uri(uri, properties.getRealm())
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(formBody)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                    String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    throw errorDecoder.decode(resp.getStatusCode().value(), body);
-                })
-                .toBodilessEntity();
-    }
-
-    private <T> T getJson(String uri, Class<T> responseType) {
-        return restClient.get()
-                .uri(uri, properties.getRealm())
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                    String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    throw errorDecoder.decode(resp.getStatusCode().value(), body);
-                })
-                .body(responseType);
+        return tokenOperations.authorizationUrl(redirectUri, state, codeChallenge);
     }
 }

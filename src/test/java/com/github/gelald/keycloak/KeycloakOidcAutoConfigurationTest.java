@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
@@ -68,5 +71,24 @@ class KeycloakOidcAutoConfigurationTest {
                     assertThat(properties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
                     assertThat(properties.getReadTimeout()).isEqualTo(Duration.ofSeconds(60));
                 });
+    }
+
+    @Test
+    @DisplayName("自定义 RestClient.Builder 被注入到 KeycloakOidcClient")
+    void customRestClientBuilderIsInjected() {
+        runner.withUserConfiguration(CustomRestClientBuilderConfig.class)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(KeycloakOidcClient.class);
+                    assertThat(context).hasBean("customRestClientBuilder");
+                });
+    }
+
+    @Configuration
+    static class CustomRestClientBuilderConfig {
+        @Bean
+        RestClient.Builder customRestClientBuilder() {
+            return RestClient.builder()
+                    .defaultHeader("X-Custom-Header", "from-custom-builder");
+        }
     }
 }

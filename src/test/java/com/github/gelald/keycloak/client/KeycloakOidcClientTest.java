@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -22,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Integration tests using WireMock to simulate Keycloak server.
+ * 使用 WireMock 模拟 Keycloak 服务器的集成测试。
  */
 class KeycloakOidcClientTest {
 
@@ -44,8 +45,8 @@ class KeycloakOidcClientTest {
         properties.setClientId("test-client");
         properties.setClientSecret("test-secret");
 
-        client = new KeycloakOidcClient(properties, new ObjectMapper(),
-                Duration.ofSeconds(10), Duration.ofSeconds(30));
+        // 使用默认构造方式（RestClient.Builder 为 null，使用默认构建器）
+        client = new KeycloakOidcClient(properties, new ObjectMapper(), null);
     }
 
     @Test
@@ -366,5 +367,153 @@ class KeycloakOidcClientTest {
         assertThat(url).contains("code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
         assertThat(url).contains("code_challenge_method=S256");
         assertThat(url).contains("scope=openid");
+    }
+
+    // --- 新增测试：Basic Auth 不发送到公开端点 ---
+
+    @Test
+    @DisplayName("公开端点 certs 不发送 Authorization header")
+    void certsDoesNotSendAuthHeader() {
+        wireMock.stubFor(get(urlEqualTo("/realms/test-realm/protocol/openid-connect/certs"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"keys\": []}")));
+
+        client.certs();
+
+        wireMock.verify(getRequestedFor(urlEqualTo("/realms/test-realm/protocol/openid-connect/certs"))
+                .withoutHeader("Authorization"));
+    }
+
+    @Test
+    @DisplayName("公开端点 ready 不发送 Authorization header")
+    void readyDoesNotSendAuthHeader() {
+        wireMock.stubFor(get(urlEqualTo("/health/ready"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"status\": \"UP\"}")));
+
+        client.ready();
+
+        wireMock.verify(getRequestedFor(urlEqualTo("/health/ready"))
+                .withoutHeader("Authorization"));
+    }
+
+    @Test
+    @DisplayName("公开端点 live 不发送 Authorization header")
+    void liveDoesNotSendAuthHeader() {
+        wireMock.stubFor(get(urlEqualTo("/health/live"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"status\": \"UP\"}")));
+
+        client.live();
+
+        wireMock.verify(getRequestedFor(urlEqualTo("/health/live"))
+                .withoutHeader("Authorization"));
+    }
+
+    // --- 新增测试：自定义 RestClient.Builder ---
+
+    @Test
+    @DisplayName("支持自定义 RestClient.Builder")
+    void customRestClientBuilder() {
+        wireMock.stubFor(post(urlEqualTo("/realms/test-realm/protocol/openid-connect/token"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                  "access_token": "at_custom",
+                                  "refresh_token": "rt_custom",
+                                  "expires_in": 300,
+                                  "token_type": "Bearer"
+                                }
+                                """)));
+
+        KeycloakOidcProperties properties = new KeycloakOidcProperties();
+        properties.setDomain(wireMock.baseUrl());
+        properties.setRealm("test-realm");
+        properties.setClientId("test-client");
+        properties.setClientSecret("test-secret");
+
+        // 提供自定义的 RestClient.Builder
+        RestClient.Builder customBuilder = RestClient.builder()
+                .defaultHeader("X-Custom-Header", "custom-value");
+
+        KeycloakOidcClient customClient = new KeycloakOidcClient(properties, new ObjectMapper(), customBuilder);
+
+        ClientCredentialsTokenRequest request = new ClientCredentialsTokenRequest();
+        TokenResponse response = customClient.getTokenByClientCredentials(request);
+
+        assertThat(response.getAccessToken()).isEqualTo("at_custom");
+        // 验证自定义 header 被发送
+        wireMock.verify(postRequestedFor(urlEqualTo("/realms/test-realm/protocol/openid-connect/token"))
+                .withHeader("X-Custom-Header", equalTo("custom-value")));
+    }
+
+    // --- 新增测试：rawBody 在异常中可用 ---
+
+    @Test
+    @DisplayName("KeycloakOidcException 包含 rawBody")
+    void exceptionContainsRawBody() {
+        String errorBody = "{\"error\":\"invalid_grant\",\"error_description\":\"Invalid user credentials\"}";
+        wireMock.stubFor(post(urlEqualTo("/realms/test-realm/protocol/openid-connect/token"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(errorBody)));
+
+        ClientCredentialsTokenRequest request = new ClientCredentialsTokenRequest();
+
+        assertThatThrownBy(() -> client.getTokenByClientCredentials(request))
+                .isInstanceOf(KeycloakOidcException.class)
+                .satisfies(ex -> {
+                    KeycloakOidcException kEx = (KeycloakOidcException) ex;
+                    assertThat(kEx.getRawBody()).isEqualTo(errorBody);
+                    assertThat(kEx.getStatus()).isEqualTo(400);
+                    assertThat(kEx.getError()).isEqualTo("invalid_grant");
+                });
+    }
+
+    @Test
+    @DisplayName("KeycloakAuthenticationException 包含 rawBody")
+    void authExceptionContainsRawBody() {
+        String errorBody = "{\"error\":\"invalid_client\",\"error_description\":\"Invalid client credentials\"}";
+        wireMock.stubFor(post(urlEqualTo("/realms/test-realm/protocol/openid-connect/token"))
+                .willReturn(aResponse()
+                        .withStatus(401)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(errorBody)));
+
+        ClientCredentialsTokenRequest request = new ClientCredentialsTokenRequest();
+
+        assertThatThrownBy(() -> client.getTokenByClientCredentials(request))
+                .isInstanceOf(KeycloakAuthenticationException.class)
+                .satisfies(ex -> {
+                    KeycloakAuthenticationException authEx = (KeycloakAuthenticationException) ex;
+                    assertThat(authEx.getRawBody()).isEqualTo(errorBody);
+                    assertThat(authEx.getStatus()).isEqualTo(401);
+                });
+    }
+
+    @Test
+    @DisplayName("KeycloakAccessDeniedException 包含 rawBody")
+    void accessDeniedExceptionContainsRawBody() {
+        String errorBody = "{\"error\":\"access_denied\",\"error_description\":\"Not allowed\"}";
+        wireMock.stubFor(post(urlEqualTo("/realms/test-realm/protocol/openid-connect/token"))
+                .willReturn(aResponse()
+                        .withStatus(403)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(errorBody)));
+
+        ClientCredentialsTokenRequest request = new ClientCredentialsTokenRequest();
+
+        assertThatThrownBy(() -> client.getTokenByClientCredentials(request))
+                .isInstanceOf(KeycloakAccessDeniedException.class)
+                .satisfies(ex -> {
+                    KeycloakAccessDeniedException deniedEx = (KeycloakAccessDeniedException) ex;
+                    assertThat(deniedEx.getRawBody()).isEqualTo(errorBody);
+                    assertThat(deniedEx.getStatus()).isEqualTo(403);
+                });
     }
 }
