@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -41,6 +43,30 @@ class KeycloakOidcAutoConfigurationTest {
         runner.withPropertyValues("keycloak.oidc.enabled=false")
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(KeycloakOidcClient.class);
+                });
+    }
+
+    @Test
+    @DisplayName("Default timeout values are applied")
+    void defaultTimeoutValues() {
+        runner.run(context -> {
+            KeycloakOidcProperties properties = context.getBean(KeycloakOidcProperties.class);
+            assertThat(properties.isEnabled()).isTrue();
+            assertThat(properties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(10));
+            assertThat(properties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
+        });
+    }
+
+    @Test
+    @DisplayName("Custom timeout values are applied")
+    void customTimeoutValues() {
+        runner.withPropertyValues(
+                        "keycloak.oidc.connect-timeout=5s",
+                        "keycloak.oidc.read-timeout=60s")
+                .run(context -> {
+                    KeycloakOidcProperties properties = context.getBean(KeycloakOidcProperties.class);
+                    assertThat(properties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+                    assertThat(properties.getReadTimeout()).isEqualTo(Duration.ofSeconds(60));
                 });
     }
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -43,7 +44,8 @@ class KeycloakOidcClientTest {
         properties.setClientId("test-client");
         properties.setClientSecret("test-secret");
 
-        client = new KeycloakOidcClient(properties, new ObjectMapper());
+        client = new KeycloakOidcClient(properties, new ObjectMapper(),
+                Duration.ofSeconds(10), Duration.ofSeconds(30));
     }
 
     @Test

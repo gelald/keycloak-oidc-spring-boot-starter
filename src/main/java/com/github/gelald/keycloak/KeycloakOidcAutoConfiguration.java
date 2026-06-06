@@ -24,6 +24,7 @@ public class KeycloakOidcAutoConfiguration {
     @ConditionalOnMissingBean
     public KeycloakOidcClient keycloakOidcClient(KeycloakOidcProperties properties,
                                                   ObjectMapper objectMapper) {
-        return new KeycloakOidcClient(properties, objectMapper);
+        return new KeycloakOidcClient(properties, objectMapper,
+                properties.getConnectTimeout(), properties.getReadTimeout());
     }
 }

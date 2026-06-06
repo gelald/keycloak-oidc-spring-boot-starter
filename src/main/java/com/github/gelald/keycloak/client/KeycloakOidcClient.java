@@ -9,7 +9,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 /**
  * Keycloak OIDC client covering OpenID Connect / OAuth2 protocol endpoints.
@@ -23,7 +25,8 @@ public class KeycloakOidcClient {
     private final KeycloakOidcProperties properties;
     private final KeycloakErrorDecoder errorDecoder;
 
-    public KeycloakOidcClient(KeycloakOidcProperties properties, ObjectMapper objectMapper) {
+    public KeycloakOidcClient(KeycloakOidcProperties properties, ObjectMapper objectMapper,
+                               Duration connectTimeout, Duration readTimeout) {
         this.properties = properties;
         this.errorDecoder = new KeycloakErrorDecoder(objectMapper);
 
@@ -31,8 +34,12 @@ public class KeycloakOidcClient {
                 .encodeToString((properties.getClientId() + ":" + properties.getClientSecret())
                         .getBytes(StandardCharsets.UTF_8));
 
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
-        requestFactory.setReadTimeout(30_000);
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(connectTimeout)
+                .build();
+
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(readTimeout);
 
         this.restClient = RestClient.builder()
                 .baseUrl(properties.getDomain())
