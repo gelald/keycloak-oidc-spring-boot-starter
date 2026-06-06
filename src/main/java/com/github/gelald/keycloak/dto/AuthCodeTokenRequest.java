@@ -1,7 +1,10 @@
 package com.github.gelald.keycloak.dto;
 
 import com.github.gelald.keycloak.enums.GrantTypeEnum;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -13,6 +16,9 @@ import java.util.Map;
 * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.1">RFC 6749 - Authorization Code Grant</a>
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthCodeTokenRequest {
     /**
      * Grant type (defaults to "authorization_code").
@@ -21,6 +27,7 @@ public class AuthCodeTokenRequest {
      *
      * @see GrantTypeEnum
      */
+    @Builder.Default
     private String grantType = GrantTypeEnum.AUTH_CODE.getValue();
     /**
      * Authorization code received from the authorization server.

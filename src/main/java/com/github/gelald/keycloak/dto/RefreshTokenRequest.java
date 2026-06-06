@@ -1,7 +1,10 @@
 package com.github.gelald.keycloak.dto;
 
 import com.github.gelald.keycloak.enums.GrantTypeEnum;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -13,6 +16,9 @@ import java.util.Map;
 * @see <a href="https://tools.ietf.org/html/rfc6749#section-6">RFC 6749 - Refreshing an Access Token</a>
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RefreshTokenRequest {
     /**
      * Grant type (defaults to "refresh_token").
@@ -21,6 +27,7 @@ public class RefreshTokenRequest {
      *
      * @see GrantTypeEnum
      */
+    @Builder.Default
     private String grantType = GrantTypeEnum.REFRESH.getValue();
     /**
      * The refresh token to exchange for a new access token.

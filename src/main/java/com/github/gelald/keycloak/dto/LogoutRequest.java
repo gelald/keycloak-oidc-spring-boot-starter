@@ -1,6 +1,9 @@
 package com.github.gelald.keycloak.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -10,6 +13,9 @@ import org.springframework.util.MultiValueMap;
 * @see <a href="https://openid.net/specs/openid-connect-session-1_0.html">OpenID Connect Session Management</a>
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LogoutRequest {
     /**
      * ID token hint to identify the session to end.

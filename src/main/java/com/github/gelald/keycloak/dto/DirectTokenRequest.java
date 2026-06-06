@@ -1,7 +1,10 @@
 package com.github.gelald.keycloak.dto;
 
 import com.github.gelald.keycloak.enums.GrantTypeEnum;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -13,6 +16,9 @@ import java.util.Map;
 * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.3">RFC 6749 - Resource Owner Password Credentials Grant</a>
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DirectTokenRequest {
     /**
      * Grant type (defaults to "password").
@@ -21,6 +27,7 @@ public class DirectTokenRequest {
      *
      * @see GrantTypeEnum
      */
+    @Builder.Default
     private String grantType = GrantTypeEnum.PASSWORD.getValue();
     /**
      * Resource owner username.
