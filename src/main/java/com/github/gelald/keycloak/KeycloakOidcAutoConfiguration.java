@@ -2,6 +2,7 @@ package com.github.gelald.keycloak;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.gelald.keycloak.client.KeycloakOidcClient;
+import com.github.gelald.keycloak.client.KeycloakOidcClientFactory;
 import com.github.gelald.keycloak.config.KeycloakOidcProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,5 +32,12 @@ public class KeycloakOidcAutoConfiguration {
                                                   ObjectMapper objectMapper,
                                                   @Nullable RestClient.Builder restClientBuilder) {
         return new KeycloakOidcClient(properties, objectMapper, restClientBuilder);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public KeycloakOidcClientFactory keycloakOidcClientFactory(KeycloakOidcProperties properties,
+                                                               ObjectMapper objectMapper) {
+        return new KeycloakOidcClientFactory(properties, objectMapper);
     }
 }
