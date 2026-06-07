@@ -3,7 +3,6 @@ package com.github.gelald.keycloak.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.gelald.keycloak.KeycloakOidcAutoConfiguration;
 import com.github.gelald.keycloak.config.KeycloakOidcProperties;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -122,10 +121,42 @@ class KeycloakOidcClientFactoryTest {
         base.setConnectTimeout(Duration.ofSeconds(7));
         base.setReadTimeout(Duration.ofSeconds(42));
 
-        KeycloakOidcClientFactory factory = new KeycloakOidcClientFactory(base, new ObjectMapper());
+        KeycloakOidcClientFactory factory = new KeycloakOidcClientFactory(base, new ObjectMapper(), null);
 
         // The factory must be constructable and the convenience method must not throw
         KeycloakOidcClient client = factory.create("override-realm", "override-client", "override-secret");
         assertThat(client).isNotNull();
+    }
+
+    @Test
+    @DisplayName("copyWithOverrides preserves all inherited properties and overrides realm/clientId/clientSecret")
+    void copyWithOverridesPreservesAllProperties() {
+        KeycloakOidcProperties base = new KeycloakOidcProperties();
+        base.setDomain("http://base-host:8080");
+        base.setPublicDomain("https://base-public.example.com");
+        base.setRealm("base-realm");
+        base.setClientId("base-client");
+        base.setClientSecret("base-secret");
+        base.setEnabled(true);
+        base.setConnectTimeout(Duration.ofSeconds(7));
+        base.setReadTimeout(Duration.ofSeconds(42));
+
+        KeycloakOidcProperties copy = KeycloakOidcClientFactory.copyWithOverrides(
+                base, "new-realm", "new-client", "new-secret");
+
+        // 继承的属性应与 base 一致
+        assertThat(copy.getDomain()).isEqualTo("http://base-host:8080");
+        assertThat(copy.getPublicDomain()).isEqualTo("https://base-public.example.com");
+        assertThat(copy.isEnabled()).isTrue();
+        assertThat(copy.getConnectTimeout()).isEqualTo(Duration.ofSeconds(7));
+        assertThat(copy.getReadTimeout()).isEqualTo(Duration.ofSeconds(42));
+
+        // 覆盖的属性应使用新值
+        assertThat(copy.getRealm()).isEqualTo("new-realm");
+        assertThat(copy.getClientId()).isEqualTo("new-client");
+        assertThat(copy.getClientSecret()).isEqualTo("new-secret");
+
+        // 确保不是同一个实例
+        assertThat(copy).isNotSameAs(base);
     }
 }

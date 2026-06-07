@@ -37,7 +37,8 @@ public class KeycloakOidcAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public KeycloakOidcClientFactory keycloakOidcClientFactory(KeycloakOidcProperties properties,
-                                                               ObjectMapper objectMapper) {
-        return new KeycloakOidcClientFactory(properties, objectMapper);
+                                                               ObjectMapper objectMapper,
+                                                               @Nullable RestClient.Builder restClientBuilder) {
+        return new KeycloakOidcClientFactory(properties, objectMapper, restClientBuilder);
     }
 }
