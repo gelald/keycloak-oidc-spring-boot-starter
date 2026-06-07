@@ -17,18 +17,10 @@ import org.springframework.util.MultiValueMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class IntrospectRequest {
-    /**
-     * Hint about the type of the submitted token (defaults to "access_token").
-     * <br/>
-     * optional - helps the authorization server optimize the lookup
-     */
+    /** RFC 7662 parameter: {@code token_type_hint}. Hint about the type of the token being introspected. Defaults to "access_token". Optional. */
     @Builder.Default
     private String tokenTypeHint = "access_token";
-    /**
-     * The token to introspect.
-     * <br/>
-     * required
-     */
+    /** RFC 7662 parameter: {@code token}. The token to introspect. Required. */
     private String token;
 
     public MultiValueMap<String, String> toMultiValueMap() {

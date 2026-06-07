@@ -20,26 +20,12 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefreshTokenRequest {
-    /**
-     * Grant type (defaults to "refresh_token").
-     * <br/>
-     * required
-     *
-     * @see GrantTypeEnum
-     */
+    /** OAuth2 parameter: {@code grant_type}. Defaults to "refresh_token". Required. */
     @Builder.Default
     private String grantType = GrantTypeEnum.REFRESH.getValue();
-    /**
-     * The refresh token to exchange for a new access token.
-     * <br/>
-     * required
-     */
+    /** OAuth2 parameter: {@code refresh_token}. The refresh token issued to the client. Required. */
     private String refreshToken;
-    /**
-     * Extension parameters for custom Keycloak SPI integrations.
-     * <br/>
-     * optional - will be flattened into form parameters
-     */
+    /** Extension parameters for custom Keycloak SPI integrations. Optional — will be flattened into form parameters. */
     private Map<String, String> extParams;
 
     public MultiValueMap<String, String> toMultiValueMap() {

@@ -20,38 +20,16 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DirectTokenRequest {
-    /**
-     * Grant type (defaults to "password").
-     * <br/>
-     * required
-     *
-     * @see GrantTypeEnum
-     */
+    /** OAuth2 parameter: {@code grant_type}. Defaults to "password". Required. */
     @Builder.Default
     private String grantType = GrantTypeEnum.PASSWORD.getValue();
-    /**
-     * Resource owner username.
-     * <br/>
-     * required
-     */
+    /** OAuth2 parameter: {@code username}. The resource owner's username. Required. */
     private String username;
-    /**
-     * Resource owner password.
-     * <br/>
-     * required
-     */
+    /** OAuth2 parameter: {@code password}. The resource owner's password. Required. */
     private String password;
-    /**
-     * Requested scope.
-     * <br/>
-     * optional
-     */
+    /** OAuth2 parameter: {@code scope}. The requested scope for the access token. Optional. */
     private String scope;
-    /**
-     * Extension parameters for custom Keycloak SPI integrations.
-     * <br/>
-     * optional - will be flattened into form parameters
-     */
+    /** Extension parameters for custom Keycloak SPI integrations. Optional — will be flattened into form parameters. */
     private Map<String, String> extParams;
 
     public MultiValueMap<String, String> toMultiValueMap() {

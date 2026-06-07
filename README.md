@@ -59,9 +59,9 @@ implementation 'com.github.gelald:keycloak-oidc-spring-boot-starter:1.0.0'
 ```yaml
 keycloak:
   oidc:
-    # 用于 server-to-server API 调用（token/cert/health 等）
+    # Internal service URL for server-to-server API calls (token/cert/health etc.)
     domain: http://keycloak-service:8080
-    # 用于浏览器重定向（authorizationUrl），不配则回退到 domain
+    # Public URL for browser redirects (authorizationUrl). Falls back to domain if not set.
     public-domain: https://auth.example.com
     realm: your-realm
     client-id: your-client-id
@@ -95,8 +95,8 @@ keycloakClient.revoke(revokeRequest);
 
 | Property | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `keycloak.oidc.domain` | Yes | — | Keycloak 内部服务地址，用于 server-to-server API 调用 |
-| `keycloak.oidc.public-domain` | No | `domain` | Keycloak 外网地址，仅用于 `authorizationUrl()` 浏览器重定向 |
+| `keycloak.oidc.domain` | Yes | — | Internal Keycloak service URL for server-to-server API calls |
+| `keycloak.oidc.public-domain` | No | `domain` | Public Keycloak URL, used only for `authorizationUrl()` browser redirects |
 | `keycloak.oidc.realm` | Yes | — | Realm name |
 | `keycloak.oidc.client-id` | Yes | — | OAuth2 client ID |
 | `keycloak.oidc.client-secret` | Yes | — | OAuth2 client secret |
@@ -114,7 +114,7 @@ import com.github.gelald.keycloak.util.PkceUtils;
 @Autowired
 private KeycloakOidcClient client;
 
-// Step 1: Redirect user to Keycloak login (使用 public-domain 构建 URL)
+// Step 1: Redirect user to Keycloak login (uses public-domain to build URL)
 @GetMapping("/login")
 public void login(HttpSession session, HttpServletResponse resp) throws IOException {
     String verifier = PkceUtils.generateCodeVerifier();

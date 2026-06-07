@@ -17,17 +17,9 @@ import org.springframework.util.MultiValueMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LogoutRequest {
-    /**
-     * ID token hint to identify the session to end.
-     * <br/>
-     * required
-     */
+    /** OIDC parameter: {@code id_token_hint}. The ID token previously issued to the client. Required. */
     private String idTokenHint;
-    /**
-     * URI to redirect to after logout.
-     * <br/>
-     * optional
-     */
+    /** OIDC parameter: {@code post_logout_redirect_uri}. URI to redirect the user agent after logout. Optional. */
     private String postLogoutRedirectUri;
 
     public MultiValueMap<String, String> toMultiValueMap() {

@@ -20,26 +20,12 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClientCredentialsTokenRequest {
-    /**
-     * Grant type (defaults to "client_credentials").
-     * <br/>
-     * required
-     *
-     * @see GrantTypeEnum
-     */
+    /** OAuth2 parameter: {@code grant_type}. Defaults to "client_credentials". Required. */
     @Builder.Default
     private String grantType = GrantTypeEnum.CLIENT.getValue();
-    /**
-     * Requested scope.
-     * <br/>
-     * optional
-     */
+    /** OAuth2 parameter: {@code scope}. The requested scope for the access token. Optional. */
     private String scope;
-    /**
-     * Extension parameters for custom Keycloak SPI integrations.
-     * <br/>
-     * optional - will be flattened into form parameters
-     */
+    /** Extension parameters for custom Keycloak SPI integrations. Optional — will be flattened into form parameters. */
     private Map<String, String> extParams;
 
     public MultiValueMap<String, String> toMultiValueMap() {

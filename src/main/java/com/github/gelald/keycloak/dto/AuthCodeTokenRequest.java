@@ -20,38 +20,16 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthCodeTokenRequest {
-    /**
-     * Grant type (defaults to "authorization_code").
-     * <br/>
-     * required
-     *
-     * @see GrantTypeEnum
-     */
+    /** OAuth2 parameter: {@code grant_type}. Defaults to "authorization_code". Required. */
     @Builder.Default
     private String grantType = GrantTypeEnum.AUTH_CODE.getValue();
-    /**
-     * Authorization code received from the authorization server.
-     * <br/>
-     * required
-     */
+    /** OAuth2 parameter: {@code code}. The authorization code received from the authorization server. Required. */
     private String authCode;
-    /**
-     * Redirect URI used in the authorization request.
-     * <br/>
-     * required
-     */
+    /** OAuth2 parameter: {@code redirect_uri}. Must match the URI used in the authorization request. Required. */
     private String redirectUri;
-    /**
-     * PKCE code verifier.
-     * <br/>
-     * required when using PKCE
-     */
+    /** PKCE parameter: {@code code_verifier}. The random string used to generate the code challenge. Required when using PKCE. */
     private String codeVerifier;
-    /**
-     * Extension parameters for custom Keycloak SPI integrations.
-     * <br/>
-     * optional - will be flattened into form parameters
-     */
+    /** Extension parameters for custom Keycloak SPI integrations. Optional — will be flattened into form parameters. */
     private Map<String, String> extParams;
 
     public MultiValueMap<String, String> toMultiValueMap() {

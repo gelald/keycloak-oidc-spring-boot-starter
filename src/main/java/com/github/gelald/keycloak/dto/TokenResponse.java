@@ -10,44 +10,28 @@ import lombok.Data;
  */
 @Data
 public class TokenResponse {
-    /**
-     * The access token issued by the authorization server.
-     */
+    /** RFC 6749 parameter: {@code access_token}. The access token issued by the authorization server. */
     @JsonProperty("access_token")
     private String accessToken;
-    /**
-     * The refresh token, which can be used to obtain new access tokens.
-     */
+    /** RFC 6749 parameter: {@code refresh_token}. The refresh token used to obtain new access tokens. */
     @JsonProperty("refresh_token")
     private String refreshToken;
-    /**
-     * ID Token value associated with the authenticated session (OIDC).
-     */
+    /** OIDC parameter: {@code id_token}. The ID Token value associated with the authenticated session. */
     @JsonProperty("id_token")
     private String idToken;
-    /**
-     * The lifetime in seconds of the access token.
-     */
+    /** RFC 6749 parameter: {@code expires_in}. The lifetime in seconds of the access token. */
     @JsonProperty("expires_in")
     private Long expiresIn;
-    /**
-     * The type of the token issued (always "Bearer").
-     */
+    /** RFC 6749 parameter: {@code token_type}. The type of the token issued (typically "Bearer"). */
     @JsonProperty("token_type")
     private String tokenType;
-    /**
-     * The scope of the access token.
-     */
+    /** RFC 6749 parameter: {@code scope}. The scope of the access token. */
     @JsonProperty("scope")
     private String scope;
-    /**
-     * Session state (Keycloak-specific).
-     */
+    /** Keycloak-specific parameter: {@code session_state}. Identifies the user's session. */
     @JsonProperty("session_state")
     private String sessionState;
-    /**
-     * Not-before policy timestamp (Keycloak-specific).
-     */
+    /** Keycloak-specific parameter: {@code not-before-policy}. Timestamp (seconds since epoch) before which the token is not valid. */
     @JsonProperty("not-before-policy")
     private Long notBeforePolicy;
 }

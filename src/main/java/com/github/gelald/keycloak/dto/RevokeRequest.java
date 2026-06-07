@@ -17,18 +17,10 @@ import org.springframework.util.MultiValueMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RevokeRequest {
-    /**
-     * Hint about the type of the token being revoked (defaults to "access_token").
-     * <br/>
-     * optional
-     */
+    /** RFC 7009 parameter: {@code token_type_hint}. Hint about the type of the token being revoked. Defaults to "access_token". Optional. */
     @Builder.Default
     private String tokenTypeHint = "access_token";
-    /**
-     * The token to revoke.
-     * <br/>
-     * required
-     */
+    /** RFC 7009 parameter: {@code token}. The token to revoke. Required. */
     private String token;
 
     public MultiValueMap<String, String> toMultiValueMap() {

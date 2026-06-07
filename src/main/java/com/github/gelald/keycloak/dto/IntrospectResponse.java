@@ -13,61 +13,37 @@ import java.util.Map;
  */
 @Data
 public class IntrospectResponse {
-    /**
-     * Whether the token is currently active.
-     */
+    /** RFC 7662 parameter: {@code active}. Indicates whether the token is currently active. */
     private Boolean active;
-    /**
-     * Token type (e.g. "Bearer").
-     */
+    /** RFC 7662 parameter: {@code typ}. The token type (e.g. "Bearer"). */
     @JsonProperty("typ")
     private String type;
-    /**
-     * Token expiration timestamp (seconds since epoch).
-     */
+    /** RFC 7519 claim: {@code exp}. Token expiration timestamp (seconds since epoch). */
     @JsonProperty("exp")
     private Long expire;
-    /**
-     * Subject - identifier for the end-user.
-     */
+    /** RFC 7519 claim: {@code sub}. Subject identifier for the end-user. */
     @JsonProperty("sub")
     private String subject;
-    /**
-     * Username of the token holder.
-     */
+    /** RFC 7662 parameter: {@code username}. Human-readable identifier for the token holder. */
     private String username;
-    /**
-     * Audience - the intended recipient(s) of the token.
-     */
+    /** RFC 7519 claim: {@code aud}. The intended recipient(s) of the token. */
     @JsonProperty("aud")
     private String audience;
-    /**
-     * Issuer - the party that issued the token.
-     */
+    /** RFC 7519 claim: {@code iss}. The party that issued the token. */
     @JsonProperty("iss")
     private String issuer;
-    /**
-     * Issued at timestamp (seconds since epoch).
-     */
+    /** RFC 7519 claim: {@code iat}. Issued-at timestamp (seconds since epoch). */
     @JsonProperty("iat")
     private Long issuedAt;
-    /**
-     * Scope of the token.
-     */
+    /** RFC 7662 parameter: {@code scope}. The scope of the token. */
     private String scope;
-    /**
-     * Client ID that requested the token.
-     */
+    /** RFC 7662 parameter: {@code client_id}. The client identifier that requested the token. */
     @JsonProperty("client_id")
     private String clientId;
-    /**
-     * Realm-level roles (Keycloak-specific).
-     */
+    /** Keycloak-specific parameter: {@code realm_access}. Realm-level role mappings. */
     @JsonProperty("realm_access")
     private Map<String, List<String>> realmAccess;
-    /**
-     * Resource-level roles (Keycloak-specific).
-     */
+    /** Keycloak-specific parameter: {@code resource_access}. Resource-level role mappings. */
     @JsonProperty("resource_access")
     private Map<String, Map<String, List<String>>> resourceAccess;
 }
