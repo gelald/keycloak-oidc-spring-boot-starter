@@ -59,10 +59,7 @@ class KeycloakHttp {
                 .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
                 .body(formBody)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                    String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    throw errorDecoder.decode(resp.getStatusCode().value(), body);
-                })
+                .onStatus(HttpStatusCode::isError, errorHandler())
                 .body(responseType);
     }
 
@@ -76,10 +73,7 @@ class KeycloakHttp {
                 .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
                 .body(formBody)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                    String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    throw errorDecoder.decode(resp.getStatusCode().value(), body);
-                })
+                .onStatus(HttpStatusCode::isError, errorHandler())
                 .toBodilessEntity();
     }
 
@@ -91,10 +85,17 @@ class KeycloakHttp {
         return restClient.get()
                 .uri(uri, properties.getRealm())
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, resp) -> {
-                    String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    throw errorDecoder.decode(resp.getStatusCode().value(), body);
-                })
+                .onStatus(HttpStatusCode::isError, errorHandler())
                 .body(responseType);
+    }
+
+    /**
+     * 统一的 HTTP 错误处理器：读取响应体并委托给 {@link KeycloakErrorDecoder} 解码。
+     */
+    private RestClient.ResponseSpec.ErrorHandler errorHandler() {
+        return (req, resp) -> {
+            String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
+            throw errorDecoder.decode(resp.getStatusCode().value(), body);
+        };
     }
 }

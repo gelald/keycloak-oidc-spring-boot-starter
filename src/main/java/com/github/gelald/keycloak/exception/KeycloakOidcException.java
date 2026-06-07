@@ -11,6 +11,7 @@ public class KeycloakOidcException extends RuntimeException {
     private final int status;
     private final String error;
     private final String description;
+    /** 原始 JSON 响应体。通过遗留构造器创建时可能为 {@code null}。 */
     private final String rawBody;
 
     public KeycloakOidcException(int status, String error, String description) {
