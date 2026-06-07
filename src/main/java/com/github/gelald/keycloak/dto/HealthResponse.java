@@ -6,8 +6,7 @@ import java.util.Map;
 
 /**
  * Keycloak health check response.
- *
-*/
+ */
 @Data
 public class HealthResponse {
     /** Overall health status: {@code "UP"} or {@code "DOWN"}. */

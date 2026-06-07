@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Request for Authorization Code grant with PKCE support.
  *
-* @see <a href="https://tools.ietf.org/html/rfc6749#section-4.1">RFC 6749 - Authorization Code Grant</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.1">RFC 6749 - Authorization Code Grant</a>
  */
 @Data
 @Builder

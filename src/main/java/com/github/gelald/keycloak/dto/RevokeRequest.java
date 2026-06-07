@@ -10,7 +10,7 @@ import org.springframework.util.MultiValueMap;
 /**
  * Token revocation request (RFC 7009).
  *
-* @see <a href="https://tools.ietf.org/html/rfc7009">RFC 7009 - OAuth 2.0 Token Revocation</a>
+ * @see <a href="https://tools.ietf.org/html/rfc7009">RFC 7009 - OAuth 2.0 Token Revocation</a>
  */
 @Data
 @Builder

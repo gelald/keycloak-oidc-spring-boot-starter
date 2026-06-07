@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Request for Resource Owner Password Credentials grant.
  *
-* @see <a href="https://tools.ietf.org/html/rfc6749#section-4.3">RFC 6749 - Resource Owner Password Credentials Grant</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.3">RFC 6749 - Resource Owner Password Credentials Grant</a>
  */
 @Data
 @Builder

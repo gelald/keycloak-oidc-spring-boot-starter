@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * OAuth2 / OIDC token endpoint response.
  *
-* @see <a href="https://tools.ietf.org/html/rfc6749#section-5.1">RFC 6749 - Access Token Response</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6749#section-5.1">RFC 6749 - Access Token Response</a>
  */
 @Data
 public class TokenResponse {

@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Request for Client Credentials grant (machine-to-machine).
  *
-* @see <a href="https://tools.ietf.org/html/rfc6749#section-4.4">RFC 6749 - Client Credentials Grant</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6749#section-4.4">RFC 6749 - Client Credentials Grant</a>
  */
 @Data
 @Builder

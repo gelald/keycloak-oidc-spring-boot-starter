@@ -10,7 +10,7 @@ import org.springframework.util.MultiValueMap;
 /**
  * Logout request to end an OIDC session.
  *
-* @see <a href="https://openid.net/specs/openid-connect-session-1_0.html">OpenID Connect Session Management</a>
+ * @see <a href="https://openid.net/specs/openid-connect-session-1_0.html">OpenID Connect Session Management</a>
  */
 @Data
 @Builder

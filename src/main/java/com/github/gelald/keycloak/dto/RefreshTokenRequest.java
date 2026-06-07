@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Request for refreshing an access token.
  *
-* @see <a href="https://tools.ietf.org/html/rfc6749#section-6">RFC 6749 - Refreshing an Access Token</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6749#section-6">RFC 6749 - Refreshing an Access Token</a>
  */
 @Data
 @Builder

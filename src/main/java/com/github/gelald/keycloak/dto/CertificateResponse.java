@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * JWKS certificate response containing public keys for JWT signature verification.
  *
-* @see <a href="https://tools.ietf.org/html/rfc7517">RFC 7517 - JSON Web Key (JWK)</a>
+ * @see <a href="https://tools.ietf.org/html/rfc7517">RFC 7517 - JSON Web Key (JWK)</a>
  */
 @Data
 public class CertificateResponse {

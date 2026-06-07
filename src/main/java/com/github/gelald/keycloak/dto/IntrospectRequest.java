@@ -10,7 +10,7 @@ import org.springframework.util.MultiValueMap;
 /**
  * Token introspection request (RFC 7662).
  *
-* @see <a href="https://tools.ietf.org/html/rfc7662">RFC 7662 - OAuth 2.0 Token Introspection</a>
+ * @see <a href="https://tools.ietf.org/html/rfc7662">RFC 7662 - OAuth 2.0 Token Introspection</a>
  */
 @Data
 @Builder
