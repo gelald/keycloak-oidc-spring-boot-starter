@@ -94,7 +94,9 @@ class KeycloakHttp {
      */
     private RestClient.ResponseSpec.ErrorHandler errorHandler() {
         return (req, resp) -> {
-            String body = new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8);
+            String body = resp.getBody() != null
+                    ? new String(resp.getBody().readAllBytes(), StandardCharsets.UTF_8)
+                    : "";
             throw errorDecoder.decode(resp.getStatusCode().value(), body);
         };
     }

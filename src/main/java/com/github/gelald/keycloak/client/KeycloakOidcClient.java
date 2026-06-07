@@ -27,6 +27,16 @@ public class KeycloakOidcClient {
     private final ProviderOperations providerOperations;
 
     /**
+     * 使用默认 RestClient 创建客户端。
+     *
+     * @param properties   Keycloak OIDC 配置属性
+     * @param objectMapper JSON 序列化/反序列化器
+     */
+    public KeycloakOidcClient(KeycloakOidcProperties properties, ObjectMapper objectMapper) {
+        this(properties, objectMapper, null);
+    }
+
+    /**
      * 使用自定义 RestClient.Builder 创建客户端。
      * <p>
      * 用户可以通过提供自定义的 RestClient.Builder 来配置 SSL、代理、拦截器等。
