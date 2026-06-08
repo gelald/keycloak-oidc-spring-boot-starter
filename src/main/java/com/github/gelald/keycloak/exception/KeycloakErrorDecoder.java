@@ -34,9 +34,9 @@ public class KeycloakErrorDecoder {
                 statusCode, error, description);
 
         return switch (statusCode) {
-            case 401 -> new KeycloakAuthenticationException(error, description);
-            case 403 -> new KeycloakAccessDeniedException(error, description);
-            default  -> new KeycloakOidcException(statusCode, error, description);
+            case 401 -> new KeycloakAuthenticationException(error, description, responseBody);
+            case 403 -> new KeycloakAccessDeniedException(error, description, responseBody);
+            default  -> new KeycloakOidcException(statusCode, error, description, responseBody);
         };
     }
 

@@ -7,6 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,5 +47,48 @@ class KeycloakOidcAutoConfigurationTest {
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(KeycloakOidcClient.class);
                 });
+    }
+
+    @Test
+    @DisplayName("Default timeout values are applied")
+    void defaultTimeoutValues() {
+        runner.run(context -> {
+            KeycloakOidcProperties properties = context.getBean(KeycloakOidcProperties.class);
+            assertThat(properties.isEnabled()).isTrue();
+            assertThat(properties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(10));
+            assertThat(properties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
+        });
+    }
+
+    @Test
+    @DisplayName("Custom timeout values are applied")
+    void customTimeoutValues() {
+        runner.withPropertyValues(
+                        "keycloak.oidc.connect-timeout=5s",
+                        "keycloak.oidc.read-timeout=60s")
+                .run(context -> {
+                    KeycloakOidcProperties properties = context.getBean(KeycloakOidcProperties.class);
+                    assertThat(properties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+                    assertThat(properties.getReadTimeout()).isEqualTo(Duration.ofSeconds(60));
+                });
+    }
+
+    @Test
+    @DisplayName("自定义 RestClient.Builder 被注入到 KeycloakOidcClient")
+    void customRestClientBuilderIsInjected() {
+        runner.withUserConfiguration(CustomRestClientBuilderConfig.class)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(KeycloakOidcClient.class);
+                    assertThat(context).hasBean("customRestClientBuilder");
+                });
+    }
+
+    @Configuration
+    static class CustomRestClientBuilderConfig {
+        @Bean
+        RestClient.Builder customRestClientBuilder() {
+            return RestClient.builder()
+                    .defaultHeader("X-Custom-Header", "from-custom-builder");
+        }
     }
 }
