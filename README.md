@@ -14,6 +14,7 @@ All existing Keycloak Java SDKs focus on the **Admin REST API** (user CRUD, real
 | Session Logout (OIDC) | Yes | No |
 | JWKS Certificates | Yes | No |
 | Health Checks | Yes | No |
+| Multi-Realm Factory | Yes | No |
 | User / Realm CRUD | No | Yes |
 | Dependency Footprint | Lightweight | Heavy (RestEasy) |
 
@@ -25,14 +26,16 @@ All existing Keycloak Java SDKs focus on the **Admin REST API** (user CRUD, real
 - **Session Logout** (OpenID Connect Session Management)
 - **JWKS Public Key Retrieval** (RFC 7517)
 - **Health Check Endpoints** (ready / live)
+- **Multi-Realm Client Factory** — `KeycloakOidcClientFactory` for interacting with multiple Keycloak realms in a single application
 - **Spring Boot Auto-Configuration** — just add dependency and configure properties
 - **Custom Exception Hierarchy** — structured error handling instead of raw HTTP status codes
 - **PKCE (S256) Utilities** — `PkceUtils` for generating code_verifier and code_challenge
+- **Configurable Timeouts** — `connectTimeout` and `readTimeout` via properties
 
 ## Requirements
 
 - Java 17+
-- Spring Boot 3.2+
+- Spring Boot 3.3+
 - Spring Web (RestClient) — no Feign / Spring Cloud dependency required
 - A running Keycloak server
 
@@ -66,6 +69,9 @@ keycloak:
     realm: your-realm
     client-id: your-client-id
     client-secret: your-client-secret
+    # Optional: configure HTTP timeouts
+    connect-timeout: 10s
+    read-timeout: 30s
 ```
 
 ### 3. Inject and Use
@@ -91,6 +97,19 @@ revokeRequest.setToken(accessToken);
 keycloakClient.revoke(revokeRequest);
 ```
 
+## Multi-Realm Support
+
+The library provides a `KeycloakOidcClientFactory` for scenarios where a single application needs to interact with multiple Keycloak realms:
+
+```java
+@Autowired
+private KeycloakOidcClientFactory clientFactory;
+
+// Create a client for a specific realm — inherits domain, timeouts, etc.
+KeycloakOidcClient realmClient = clientFactory.create("other-realm", "other-client-id", "other-secret");
+TokenResponse tokens = realmClient.getTokenByClientCredentials(new ClientCredentialsTokenRequest());
+```
+
 ## Configuration Properties
 
 | Property | Required | Default | Description |
@@ -101,6 +120,8 @@ keycloakClient.revoke(revokeRequest);
 | `keycloak.oidc.client-id` | Yes | — | OAuth2 client ID |
 | `keycloak.oidc.client-secret` | Yes | — | OAuth2 client secret |
 | `keycloak.oidc.enabled` | No | `true` | Enable/disable auto-configuration |
+| `keycloak.oidc.connect-timeout` | No | `10s` | Connection timeout for HTTP requests to Keycloak |
+| `keycloak.oidc.read-timeout` | No | `30s` | Read timeout for HTTP requests to Keycloak |
 
 ## Usage Examples
 
@@ -162,6 +183,11 @@ TokenResponse tokens = keycloakClient.getTokenByRefresh(request);
 DirectTokenRequest request = new DirectTokenRequest();
 request.setUsername("user@example.com");
 request.setPassword("password");
+// Optional: set scope and extension parameters
+request.setScope("openid profile email");
+Map<String, String> extParams = new HashMap<>();
+extParams.put("custom-field", "custom-value");
+request.setExtParams(extParams);
 TokenResponse tokens = keycloakClient.getTokenByDirectFlow(request);
 ```
 
@@ -170,6 +196,8 @@ TokenResponse tokens = keycloakClient.getTokenByDirectFlow(request);
 ```java
 LogoutRequest request = new LogoutRequest();
 request.setIdTokenHint("your-id-token");
+// Optional: redirect after logout
+request.setPostLogoutRedirectUri("https://your-app.com/home");
 keycloakClient.logout(request);
 ```
 
@@ -178,6 +206,7 @@ keycloakClient.logout(request);
 ```java
 CertificateResponse certs = keycloakClient.certs();
 // Use certs.getKeys() for JWT signature verification
+// Each CertificateData contains: kid, keyType, algorithm, use, modulus, exponent
 ```
 
 ### Health Checks
@@ -185,17 +214,47 @@ CertificateResponse certs = keycloakClient.certs();
 ```java
 HealthResponse ready = keycloakClient.ready();
 HealthResponse live = keycloakClient.live();
+// HealthResponse provides: status ("UP"/"DOWN"), details (Map<String, Object>)
 ```
 
-### Custom Extension Parameters
+## DTOs and Request/Response Objects
 
-```java
-// For Keycloak SPI extensions or custom token exchange parameters
-ClientCredentialsTokenRequest request = new ClientCredentialsTokenRequest();
-Map<String, String> extParams = new HashMap<>();
-extParams.put("custom-field", "custom-value");
-request.setExtParams(extParams);
-```
+### Token Requests
+
+| Class | Grant Type | Key Fields |
+|-------|-----------|------------|
+| `AuthCodeTokenRequest` | authorization_code | `authCode`, `redirectUri`, `codeVerifier`, `extParams` |
+| `ClientCredentialsTokenRequest` | client_credentials | `scope`, `extParams` |
+| `DirectTokenRequest` | password | `username`, `password`, `scope`, `extParams` |
+| `RefreshTokenRequest` | refresh_token | `refreshToken`, `extParams` |
+
+### Other Requests
+
+| Class | Description | Key Fields |
+|-------|-------------|------------|
+| `IntrospectRequest` | Token introspection (RFC 7662) | `token`, `tokenTypeHint` |
+| `RevokeRequest` | Token revocation (RFC 7009) | `token`, `tokenTypeHint` |
+| `LogoutRequest` | OIDC session logout | `idTokenHint`, `postLogoutRedirectUri` |
+
+### Response Objects
+
+| Class | Description | Key Fields |
+|-------|-------------|------------|
+| `TokenResponse` | OAuth2/OIDC token response | `accessToken`, `refreshToken`, `idToken`, `expiresIn`, `tokenType`, `scope`, `sessionState`, `notBeforePolicy` |
+| `IntrospectResponse` | Introspection result (RFC 7662) | `active`, `typ`, `exp`, `sub`, `username`, `aud`, `iss`, `iat`, `scope`, `clientId`, `realmAccess`, `resourceAccess` |
+| `CertificateResponse` | JWKS key set (RFC 7517) | `keys` — list of `CertificateData` (kid, keyType, algorithm, use, modulus, exponent) |
+| `HealthResponse` | Health check result | `status`, `details` |
+
+### Grant Type Enum
+
+The `GrantTypeEnum` covers all supported grant types:
+
+| Enum Value | Grant Type Value |
+|------------|-----------------|
+| `AUTH_CODE` | `authorization_code` |
+| `CLIENT` | `client_credentials` |
+| `PASSWORD` | `password` |
+| `REFRESH` | `refresh_token` |
 
 ## Error Handling
 
@@ -211,6 +270,7 @@ Each exception contains:
 - `status` — HTTP status code
 - `error` — Keycloak error code (e.g. `invalid_grant`)
 - `description` — Human-readable error description
+- `rawBody` — Raw JSON response body from Keycloak
 
 ```java
 try {
@@ -229,13 +289,6 @@ try {
 ```bash
 mvn clean verify
 ```
-
-## Roadmap
-
-- [v1.1] Request/response logging interceptor
-- [v1.1] Input validation on DTOs
-- [v1.2] Retry / Circuit breaker (Resilience4j)
-- [v1.2] Reactive WebClient support
 
 ## License
 
